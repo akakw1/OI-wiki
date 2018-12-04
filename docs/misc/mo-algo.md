@@ -518,8 +518,7 @@ int main() {
 
 条件：
 
--   属于同一块的节点之间的距离不超过给定块的大小
--   每个块中的节点不能太多也不能太少
+-   属于同一块的任意节点之间的距离不超过给定块的大小
 -   每个节点都要属于一个块
 -   编号相邻的块之间的距离不能太大
 
@@ -556,7 +555,7 @@ void move(int x, int y) {
 }
 ```
 
-对于求 LCA，我们可以用树剖，然后我们就可以把分块的步骤放到树剖的第一次 dfs 里面，时间戳也可以直接用第二次 dfs 的 dfs 序~~（如果你用 tarjan 就当我没说）~~
+对于求 LCA，我们可以用树剖，然后我们就可以把分块的步骤放到树剖的第一次 dfs 里面，时间戳也可以直接用第二次 dfs 的 dfs 序 ~~（如果你用 tarjan 就当我没说）~~
 
 ```cpp
 int bl[100002], bls = 0;  //属于的块，块的数量
@@ -602,7 +601,7 @@ if (!sta.empty()) {
 
 ### [WC2013]糖果公园
 
-由于多了时间维，块的大小取到 0.6 的样子就差不多了
+由于多了时间维，块的大小取到 0.67 的样子就差不多了
 
 ```cpp
 #include <bits/stdc++.h>
@@ -623,9 +622,10 @@ void add(int x, int y) {
   ver[++tot] = x, nxt[tot] = head[y], head[y] = tot;
 }
 int bl[100002], bls = 0;
-unsigned step;
+unsigned step;//unit
 int fa[100002], dp[100002], hs[100002] = {0}, sz[100002] = {0}, top[100002],
                             id[100002];
+//父节点，深度，重儿子，子树大小，重链顶，dfs序
 stack<int> sta;
 void dfs1(int x) {
   sz[x] = 1;
@@ -636,6 +636,7 @@ void dfs1(int x) {
       dfs1(ver[i]);
       sz[x] += sz[ver[i]];
       if (sz[ver[i]] > sz[hs[x]]) hs[x] = ver[i];
+      //分块
       if (sta.size() - ss >= step) {
         bls++;
         while (sta.size() != ss) bl[sta.top()] = bls, sta.pop();
@@ -651,6 +652,7 @@ void dfs2(int x, int hf) {
   for (int i = head[x]; i; i = nxt[i])
     if (ver[i] != fa[x] && ver[i] != hs[x]) dfs2(ver[i], ver[i]);
 }
+//求LCA
 int lca(int x, int y) {
   while (top[x] != top[y]) {
     if (dp[top[x]] < dp[top[y]]) swap(x, y);
@@ -658,6 +660,7 @@ int lca(int x, int y) {
   }
   return dp[x] < dp[y] ? x : y;
 }
+//询问
 struct qu {
   int x, y, t, id;
   bool operator<(const qu a) const {
@@ -666,10 +669,11 @@ struct qu {
   }
 } q[100001];
 int qs = 0;
+//修改
 struct ch {
   int x, y, b;
 } upd[100001];
-int ups = 0;
+int ups = 0;//时间维
 long long ans[100001];
 int b[100001] = {0};
 int a[100001];
@@ -677,6 +681,7 @@ long long w[100001];
 long long v[100001];
 long long now = 0;
 bool vis[100001] = {0};
+//改回去
 void back(int t) {
   if (vis[upd[t].x]) {
     now -= w[b[upd[t].y]--] * v[upd[t].y];
@@ -684,6 +689,7 @@ void back(int t) {
   }
   a[upd[t].x] = upd[t].b;
 }
+//修改
 void change(int t) {
   if (vis[upd[t].x]) {
     now -= w[b[upd[t].b]--] * v[upd[t].b];
@@ -691,6 +697,7 @@ void change(int t) {
   }
   a[upd[t].x] = upd[t].y;
 }
+//指针移动后更新答案
 void update(int x) {
   if (vis[x])
     now -= w[b[a[x]]--] * v[a[x]];
@@ -698,6 +705,7 @@ void update(int x) {
     now += w[++b[a[x]]] * v[a[x]];
   vis[x] ^= 1;
 }
+//将指针从x移动到y（这里没有修改LCA上的信息）
 void move(int x, int y) {
   if (dp[x] < dp[y]) swap(x, y);
   while (dp[x] > dp[y]) update(x), x = fa[x];
@@ -723,6 +731,7 @@ int main() {
     bls++;
     while (!sta.empty()) bl[sta.top()] = bls, sta.pop();
   }
+  //将询问的x，y按时间戳交换好像可以加快速度
   for (int i = 1; i <= n; i++)
     if (id[q[i].x] > id[q[i].y]) swap(q[i].x, q[i].y);
   sort(q + 1, q + qs + 1);
@@ -731,11 +740,11 @@ int main() {
     if (x != q[i].x) move(x, q[i].x), x = q[i].x;
     if (y != q[i].y) move(y, q[i].y), y = q[i].y;
     int f = lca(x, y);
-    update(f);
+    update(f);//添加LCA信息
     while (t < q[i].t) change(++t);
     while (t > q[i].t) back(t--);
     ans[q[i].id] = now;
-    update(f);
+    update(f);//将LCA信息删除
   }
   for (int i = 1; i <= qs; i++) printf("%lld\n", ans[i]);
   return 0;
